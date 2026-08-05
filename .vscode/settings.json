@@ -1,11 +1,4 @@
 {
     "editor.mouseWheelZoom": true,
     "files.defaultLanguage": "${activeEditorLanguage}",
-    
-    "gopls": {
-        "directoryFilters": [
-            "-src/main",
-            "-src/mrapps"
-        ]
-    }
 }
