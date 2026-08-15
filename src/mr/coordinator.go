@@ -76,10 +76,12 @@ func MakeCoordinator(sockname string, files []string, nReduce int) *Coordinator 
 	return &c
 }
 
-func GetTask() {
+func (c *Coordinator) GetTask(args *MessageReport, reply *MessageTask) {
+	// 不使用第一个参数
 
 }
 
-func ReportTask() {
+func (c *Coordinator) ReportTask(args *MessageReport, reply *MessageTask) {
+	// 不使用第二个参数
 
 }
