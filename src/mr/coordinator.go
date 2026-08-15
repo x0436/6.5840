@@ -9,6 +9,7 @@ import "time"
 import "sync"
 
 type TaskState int
+
 const (
 	Unassigned = iota
 	Assigned
@@ -71,13 +72,13 @@ func (c *Coordinator) Done() bool {
 // nReduce is the number of reduce tasks to use.
 func MakeCoordinator(sockname string, files []string, nReduce int) *Coordinator {
 	c := Coordinator{
-		NMap: len(files),
-		NReduce: nReduce,
-		MapTasks: make([]TaskInfo, len(files)),
-		ReduceTasks: make([]TaskInfo, nReduce),
-		AllMapTaskCompleted: false,
+		NMap:                   len(files),
+		NReduce:                nReduce,
+		MapTasks:               make([]TaskInfo, len(files)),
+		ReduceTasks:            make([]TaskInfo, nReduce),
+		AllMapTaskCompleted:    false,
 		AllReduceTaskCompleted: false,
-		Mutex: sync.Mutex{},
+		Mutex:                  sync.Mutex{},
 	}
 
 	c.InitMapTask(files)
@@ -88,8 +89,20 @@ func MakeCoordinator(sockname string, files []string, nReduce int) *Coordinator 
 }
 
 func (c *Coordinator) InitMapTask(files []string) {
-
+	// 遍历files 获得 那啥
+	for i, file := range files {
+		c.MapTasks[i] = TaskInfo{
+			TaskState: Unassigned,
+			TaskFile:  file,
+			TimeStamp: time.Now(),
+		}
+	}
 }
 func (c *Coordinator) InitReduceTask() {
-
+	for i := range c.ReduceTasks {
+		c.ReduceTasks[i] = TaskInfo{
+			TaskState: Unassigned,
+			TimeStamp: time.Now(),
+		}
+	}
 }
