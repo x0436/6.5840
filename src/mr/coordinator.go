@@ -34,11 +34,13 @@ type Coordinator struct {
 
 // Your code here -- RPC handlers for the worker to call.
 
-// an example RPC handler.
-//
-// the RPC argument and reply types are defined in rpc.go.
-func (c *Coordinator) Example(args *ExampleArgs, reply *ExampleReply) error {
-	reply.Y = args.X + 1
+func (c *Coordinator) GetTask(args *MessageReport, reply *MessageTask) error {
+	// 不使用第一个参数
+	return nil
+}
+
+func (c *Coordinator) ReportTask(args *MessageReport, reply *MessageTask) error {
+	// 不使用第二个参数
 	return nil
 }
 
@@ -90,14 +92,4 @@ func (c *Coordinator) InitMapTask(files []string) {
 }
 func (c *Coordinator) InitReduceTask() {
 
-}
-
-func (c *Coordinator) GetTask(args *MessageReport, reply *MessageTask) error {
-	// 不使用第一个参数
-	return nil
-}
-
-func (c *Coordinator) ReportTask(args *MessageReport, reply *MessageTask) error {
-	// 不使用第二个参数
-	return nil
 }
