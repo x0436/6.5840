@@ -92,12 +92,12 @@ func (c *Coordinator) InitReduceTask() {
 
 }
 
-func (c *Coordinator) GetTask(args *MessageReport, reply *MessageTask) {
+func (c *Coordinator) GetTask(args *MessageReport, reply *MessageTask) error {
 	// 不使用第一个参数
-
+	return nil
 }
 
-func (c *Coordinator) ReportTask(args *MessageReport, reply *MessageTask) {
+func (c *Coordinator) ReportTask(args *MessageReport, reply *MessageTask) error {
 	// 不使用第二个参数
-
+	return nil
 }
