@@ -58,3 +58,12 @@ func MakeCoordinator(sockname string, files []string, nReduce int) *Coordinator 
 	c.server(sockname)
 	return &c
 }
+
+func GetTask() {
+
+}
+
+func ReportTask() {
+
+}
+

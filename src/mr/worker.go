@@ -64,6 +64,22 @@ func CallExample() {
 	}
 }
 
+func CallForTask() {
+
+}
+
+func CallForReport() {
+
+}
+
+func HandleMapTask() {
+
+}
+
+func HandleReduceTask() {
+
+}
+
 // send an RPC request to the coordinator, wait for the response.
 // usually returns true.
 // returns false if something goes wrong.
