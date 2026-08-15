@@ -26,12 +26,12 @@ const (
 	Exit
 )
 
-type Report2Coordinator struct {
+type MessageReport struct {
 	TaskID int
 	TaskCompletedState TaskCompletedState
 }
 
-type Task2Worker struct {
+type MessageTask struct {
 	TaskID int
 	TaskType TaskType
 	TaskFile string
