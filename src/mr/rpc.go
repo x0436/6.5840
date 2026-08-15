@@ -22,15 +22,16 @@ type TaskType int
 const (
 	MapTask = iota
 	ReduceTask
+	WAIT
 	Exit
 )
 
-type Message2Coordinator struct {
+type Report2Coordinator struct {
 	TaskID int
 	TaskCompletedState TaskCompletedState
 }
 
-type Message2Worker struct {
+type Task2Worker struct {
 	TaskID int
 	TaskType TaskType
 	TaskFile string
