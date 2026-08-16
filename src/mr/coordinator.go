@@ -36,6 +36,8 @@ type Coordinator struct {
 // Your code here -- RPC handlers for the worker to call.
 
 func (c *Coordinator) GetTask(args *MessageReport, reply *MessageTask) error {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
 	reply.NMap = c.NMap
 	reply.NReduce = c.NReduce
 	if !c.AllMapTaskCompleted {
