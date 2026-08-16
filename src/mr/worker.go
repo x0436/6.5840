@@ -58,6 +58,7 @@ func Worker(sockname string, mapf func(string, string) []KeyValue,
 		}
 
 		CallForReport(&report, &task)
+		// TODO: 退出循环呢
 	}
 }
 
@@ -106,7 +107,7 @@ func HandleMapTask(task *MessageTask, mapf func(string, string) []KeyValue) {
 		ofile, _ := os.Create(oname)
 		enc := json.NewEncoder(ofile)
 
-		sort.Sort(ByKey(intermediate[i]))
+		// sort.Sort(ByKey(intermediate[i]))
 
 		for _, kv := range intermediate[i] {
 			// fmt.Fprintf(ofile, "%v %v\n", kv.Key, kv.Value)
@@ -116,7 +117,58 @@ func HandleMapTask(task *MessageTask, mapf func(string, string) []KeyValue) {
 }
 
 func HandleReduceTask(task *MessageTask, reducef func(string, []string) string) {
+	NMap := task.NMap
+	intermediate := []KeyValue{}
 
+	// 枚举每个中间文件, 获取kv对后合并到intermediate
+	for i := 0; i < NMap; i++ {
+		filename := fmt.Sprintf("mr-%d-%d", i, task.TaskID)
+		file, err := os.Open(filename)
+		if err != nil {
+			log.Fatalf("cannot open %v", filename)
+		}
+
+		dec := json.NewDecoder(file)
+		for {
+			var kv KeyValue
+			if err := dec.Decode(&kv); err != nil {
+				break
+			}
+			intermediate = append(intermediate, kv)
+		}
+	}
+
+	generateOutputFile(task.TaskID, intermediate, reducef)
+}
+func generateOutputFile(taskID int, intermediate []KeyValue, reducef func(string, []string) string) {
+	sort.Sort(ByKey(intermediate))
+
+	oname := fmt.Sprintf("mr-out-%d", taskID)
+	ofile, _ := os.Create(oname)
+
+	//
+	// call Reduce on each distinct key in intermediate[],
+	// and print the result to mr-out-0.
+	//
+	i := 0
+	for i < len(intermediate) {
+		j := i + 1
+		for j < len(intermediate) && intermediate[j].Key == intermediate[i].Key {
+			j++
+		}
+		values := []string{}
+		for k := i; k < j; k++ {
+			values = append(values, intermediate[k].Value)
+		}
+		output := reducef(intermediate[i].Key, values)
+
+		// this is the correct format for each line of Reduce output.
+		fmt.Fprintf(ofile, "%v %v\n", intermediate[i].Key, output)
+
+		i = j
+	}
+
+	ofile.Close()
 }
 
 // send an RPC request to the coordinator, wait for the response.
