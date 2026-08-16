@@ -86,6 +86,21 @@ func (c *Coordinator) assign(tasks []TaskInfo, id int, reply *MessageTask) error
 
 func (c *Coordinator) ReportTask(args *MessageReport, reply *MessageTask) error {
 	// 不使用第二个参数
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	if args.TaskCompletedState == MapTaskCompleted {
+		c.MapTasks[args.TaskID].TaskState = Completed
+		return nil
+	} else if args.TaskCompletedState == MapTaskFailed {
+		c.MapTasks[args.TaskID].TaskState = Failed
+		return nil
+	} else if args.TaskCompletedState == ReduceTaskCompleted {
+		c.ReduceTasks[args.TaskID].TaskState = Completed
+		return nil
+	} else if args.TaskCompletedState == ReduceTaskFailed {
+		c.ReduceTasks[args.TaskID].TaskState = Failed
+		return nil
+	}
 	return nil
 }
 
