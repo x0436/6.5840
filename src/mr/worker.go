@@ -51,11 +51,21 @@ func Worker(sockname string, mapf func(string, string) []KeyValue,
 }
 
 func CallForTask(args *MessageReport, reply *MessageTask) {
-	call("Coordinator.GetTask", &args, &reply)
+	ok := call("Coordinator.GetTask", &args, &reply)
+	if ok {
+		fmt.Printf("Get Task succeed!\n")
+	} else {
+		fmt.Printf("call failed!\n")
+	}
 }
 
 func CallForReport(args *MessageReport, reply *MessageTask) {
-	call("Coordinator.ReportTask", &args, &reply)
+	ok := call("Coordinator.ReportTask", &args, &reply)
+	if ok {
+		fmt.Printf("Report Task succeed!\n")
+	} else {
+		fmt.Printf("call failed!\n")
+	}
 }
 
 func HandleMapTask() {
