@@ -36,7 +36,49 @@ type Coordinator struct {
 // Your code here -- RPC handlers for the worker to call.
 
 func (c *Coordinator) GetTask(args *MessageReport, reply *MessageTask) error {
-	// 不使用第一个参数
+	reply.NMap = c.NMap
+	reply.NReduce = c.NReduce
+	if !c.AllMapTaskCompleted {
+		reply.TaskType = MapTask
+		return c.assignTask(c.MapTasks, reply)
+	}
+	if !c.AllReduceTaskCompleted {
+		reply.TaskType = ReduceTask
+		return c.assignTask(c.ReduceTasks, reply)
+	}
+	reply.TaskType = Exit
+	return nil
+}
+func (c *Coordinator) assignTask(tasks []TaskInfo, reply *MessageTask) error {
+	// 优先分配未分配任务
+	for i := range tasks {
+		if tasks[i].TaskState == Unassigned {
+			return c.assign(tasks, i, reply)
+		}
+	}
+
+	// 再分配失败或超时任务
+	for i := range tasks {
+		if tasks[i].TaskState == Failed ||
+			(tasks[i].TaskState == Assigned &&
+				time.Since(tasks[i].TimeStamp) > 10*time.Second) {
+			return c.assign(tasks, i, reply)
+		}
+	}
+
+	// 当前没有可分配的任务
+	reply.TaskType = WAIT
+	return nil
+}
+func (c *Coordinator) assign(tasks []TaskInfo, id int, reply *MessageTask) error {
+	task := &tasks[id]
+
+	task.TaskState = Assigned
+	task.TimeStamp = time.Now()
+
+	reply.TaskID = id
+	reply.TaskFile = task.TaskFile
+
 	return nil
 }
 
