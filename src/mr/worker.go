@@ -6,7 +6,6 @@ import "net/rpc"
 import "hash/fnv"
 import "os"
 
-
 // Map functions return a slice of KeyValue.
 type KeyValue struct {
 	Key   string
@@ -23,53 +22,26 @@ func ihash(key string) int {
 
 var coordSockName string // socket for coordinator
 
-
 // main/mrworker.go calls this function.
 func Worker(sockname string, mapf func(string, string) []KeyValue,
 	reducef func(string, []string) string) {
 
 	coordSockName = sockname
 
-	// Your worker implementation here.
-
-	// uncomment to send the Example RPC to the coordinator.
-	// CallExample()
-
-}
-
-// example function to show how to make an RPC call to the coordinator.
-//
-// the RPC argument and reply types are defined in rpc.go.
-func CallExample() {
-
-	// declare an argument structure.
-	args := ExampleArgs{}
-
-	// fill in the argument(s).
-	args.X = 99
-
-	// declare a reply structure.
-	reply := ExampleReply{}
-
-	// send the RPC request, wait for the reply.
-	// the "Coordinator.Example" tells the
-	// receiving server that we'd like to call
-	// the Example() method of struct Coordinator.
-	ok := call("Coordinator.Example", &args, &reply)
-	if ok {
-		// reply.Y should be 100.
-		fmt.Printf("reply.Y %v\n", reply.Y)
-	} else {
-		fmt.Printf("call failed!\n")
-	}
 }
 
 func CallForTask() {
-
+	// 不需要传参, 只需要接收
+	args := MessageReport{}
+	reply := MessageTask{} // 需要处理
+	call("Coordinator.GetTask", &args, &reply)
 }
 
 func CallForReport() {
-
+	// 不需要接收, 只需要传参
+	args := MessageReport{} // 需要处理
+	reply := MessageTask{}
+	call("Coordinator.GetTask", &args, &reply)
 }
 
 func HandleMapTask() {
