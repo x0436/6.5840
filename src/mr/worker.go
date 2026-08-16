@@ -28,20 +28,23 @@ func Worker(sockname string, mapf func(string, string) []KeyValue,
 
 	coordSockName = sockname
 
+	report := MessageReport{}
+	task := MessageTask{}
+
+	CallForTask(&report, &task)
+
+	HandleMapTask()
+	HandleReduceTask()
+
+	CallForReport(&report, &task)
 }
 
-func CallForTask() {
-	// 不需要传参, 只需要接收
-	args := MessageReport{}
-	reply := MessageTask{} // 需要处理
+func CallForTask(args *MessageReport, reply *MessageTask) {
 	call("Coordinator.GetTask", &args, &reply)
 }
 
-func CallForReport() {
-	// 不需要接收, 只需要传参
-	args := MessageReport{} // 需要处理
-	reply := MessageTask{}
-	call("Coordinator.GetTask", &args, &reply)
+func CallForReport(args *MessageReport, reply *MessageTask) {
+	call("Coordinator.ReportTask", &args, &reply)
 }
 
 func HandleMapTask() {
