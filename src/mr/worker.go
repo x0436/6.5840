@@ -39,9 +39,9 @@ func Worker(sockname string, mapf func(string, string) []KeyValue,
 
 		switch task.TaskType {
 		case MapTask:
-			HandleMapTask()
+			HandleMapTask(&task)
 		case ReduceTask:
-			HandleReduceTask()
+			HandleReduceTask(&task)
 		case WAIT:
 			time.Sleep(1 * time.Second)
 		}
@@ -68,11 +68,11 @@ func CallForReport(args *MessageReport, reply *MessageTask) {
 	}
 }
 
-func HandleMapTask() {
+func HandleMapTask(task *MessageTask, mapf func(string, string) []KeyValue) {
 
 }
 
-func HandleReduceTask() {
+func HandleReduceTask(task *MessageTask, reducef func(string, []string) string) {
 
 }
 
