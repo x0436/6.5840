@@ -1,14 +1,15 @@
 package mr
 
 import (
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"io"
 	"log"
 	"net/rpc"
 	"os"
-	"time"
 	"sort"
+	"time"
 )
 
 // Map functions return a slice of KeyValue.
@@ -16,6 +17,7 @@ type KeyValue struct {
 	Key   string
 	Value string
 }
+
 // for sorting by key.
 type ByKey []KeyValue
 
@@ -102,10 +104,13 @@ func HandleMapTask(task *MessageTask, mapf func(string, string) []KeyValue) {
 	for i := 0; i < NReduce; i++ {
 		oname := fmt.Sprintf("mr-%d-%d", task.TaskID, i)
 		ofile, _ := os.Create(oname)
+		enc := json.NewEncoder(ofile)
+
 		sort.Sort(ByKey(intermediate[i]))
 
 		for _, kv := range intermediate[i] {
-			fmt.Fprintf(ofile, "%v %v\n", kv.Key, kv.Value)
+			// fmt.Fprintf(ofile, "%v %v\n", kv.Key, kv.Value)
+			enc.Encode(&kv)
 		}
 	}
 }
