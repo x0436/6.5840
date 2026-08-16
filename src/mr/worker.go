@@ -3,10 +3,12 @@ package mr
 import (
 	"fmt"
 	"hash/fnv"
+	"io"
 	"log"
 	"net/rpc"
 	"os"
 	"time"
+	"sort"
 )
 
 // Map functions return a slice of KeyValue.
@@ -14,6 +16,13 @@ type KeyValue struct {
 	Key   string
 	Value string
 }
+// for sorting by key.
+type ByKey []KeyValue
+
+// for sorting by key.
+func (a ByKey) Len() int           { return len(a) }
+func (a ByKey) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByKey) Less(i, j int) bool { return a[i].Key < a[j].Key }
 
 // use ihash(key) % NReduce to choose the reduce
 // task number for each KeyValue emitted by Map.
@@ -39,9 +48,9 @@ func Worker(sockname string, mapf func(string, string) []KeyValue,
 
 		switch task.TaskType {
 		case MapTask:
-			HandleMapTask(&task)
+			HandleMapTask(&task, mapf)
 		case ReduceTask:
-			HandleReduceTask(&task)
+			HandleReduceTask(&task, reducef)
 		case WAIT:
 			time.Sleep(1 * time.Second)
 		}
@@ -69,7 +78,36 @@ func CallForReport(args *MessageReport, reply *MessageTask) {
 }
 
 func HandleMapTask(task *MessageTask, mapf func(string, string) []KeyValue) {
+	NReduce := task.NReduce
+	filename := task.TaskFile
+	intermediate := make([][]KeyValue, NReduce)
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatalf("cannot open %v", filename)
+	}
+	content, err := io.ReadAll(file)
+	if err != nil {
+		log.Fatalf("cannot read %v", filename)
+	}
+	file.Close()
+	kva := mapf(filename, string(content))
+	// 遍历kv对切片, 将其放进对应的中间文件
+	for _, kv := range kva {
+		key := kv.Key
+		idx := ihash(key) % NReduce
+		intermediate[idx] = append(intermediate[idx], kv)
+	}
 
+	// 遍历每个中间文件 intermediate[i] 生成 mr-X-Y
+	for i := 0; i < NReduce; i++ {
+		oname := fmt.Sprintf("mr-%d-%d", task.TaskID, i)
+		ofile, _ := os.Create(oname)
+		sort.Sort(ByKey(intermediate[i]))
+
+		for _, kv := range intermediate[i] {
+			fmt.Fprintf(ofile, "%v %v\n", kv.Key, kv.Value)
+		}
+	}
 }
 
 func HandleReduceTask(task *MessageTask, reducef func(string, []string) string) {
