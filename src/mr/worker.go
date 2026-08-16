@@ -1,10 +1,13 @@
 package mr
 
-import "fmt"
-import "log"
-import "net/rpc"
-import "hash/fnv"
-import "os"
+import (
+	"fmt"
+	"hash/fnv"
+	"log"
+	"net/rpc"
+	"os"
+	"time"
+)
 
 // Map functions return a slice of KeyValue.
 type KeyValue struct {
@@ -28,15 +31,23 @@ func Worker(sockname string, mapf func(string, string) []KeyValue,
 
 	coordSockName = sockname
 
-	report := MessageReport{}
-	task := MessageTask{}
+	for {
+		report := MessageReport{}
+		task := MessageTask{}
 
-	CallForTask(&report, &task)
+		CallForTask(&report, &task)
 
-	HandleMapTask()
-	HandleReduceTask()
+		switch task.TaskType {
+		case MapTask:
+			HandleMapTask()
+		case ReduceTask:
+			HandleReduceTask()
+		case WAIT:
+			time.Sleep(1 * time.Second)
+		}
 
-	CallForReport(&report, &task)
+		CallForReport(&report, &task)
+	}
 }
 
 func CallForTask(args *MessageReport, reply *MessageTask) {
