@@ -144,7 +144,6 @@ func MakeCoordinator(sockname string, files []string, nReduce int) *Coordinator 
 }
 
 func (c *Coordinator) InitMapTask(files []string) {
-	// 遍历files 获得 那啥
 	for i, file := range files {
 		c.MapTasks[i] = TaskInfo{
 			TaskState: Unassigned,

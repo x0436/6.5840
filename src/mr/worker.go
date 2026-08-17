@@ -144,12 +144,10 @@ func generateOutputFile(taskID int, intermediate []KeyValue, reducef func(string
 	sort.Sort(ByKey(intermediate))
 
 	oname := fmt.Sprintf("mr-out-%d", taskID)
-	ofile, _ := os.Create(oname)
 
-	//
-	// call Reduce on each distinct key in intermediate[],
-	// and print the result to mr-out-0.
-	//
+	ofile, _ := os.Create(oname)
+	fmt.Printf("Create file mr-out-%d", taskID)
+
 	i := 0
 	for i < len(intermediate) {
 		j := i + 1
@@ -162,7 +160,6 @@ func generateOutputFile(taskID int, intermediate []KeyValue, reducef func(string
 		}
 		output := reducef(intermediate[i].Key, values)
 
-		// this is the correct format for each line of Reduce output.
 		fmt.Fprintf(ofile, "%v %v\n", intermediate[i].Key, output)
 
 		i = j
