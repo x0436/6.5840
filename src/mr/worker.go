@@ -63,7 +63,7 @@ func Worker(sockname string, mapf func(string, string) []KeyValue,
 }
 
 func CallForTask(args *MessageReport, reply *MessageTask) {
-	ok := call("Coordinator.GetTask", &args, &reply)
+	ok := call("Coordinator.GetTask", args, reply)
 	if ok {
 		fmt.Printf("Get Task succeed!\n")
 	} else {
@@ -72,7 +72,7 @@ func CallForTask(args *MessageReport, reply *MessageTask) {
 }
 
 func CallForReport(args *MessageReport, reply *MessageTask) {
-	ok := call("Coordinator.ReportTask", &args, &reply)
+	ok := call("Coordinator.ReportTask", args, reply)
 	if ok {
 		fmt.Printf("Report Task succeed!\n")
 	} else {
