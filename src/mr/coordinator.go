@@ -90,18 +90,38 @@ func (c *Coordinator) ReportTask(args *MessageReport, reply *MessageTask) error 
 	defer c.Mutex.Unlock()
 	if args.TaskCompletedState == MapTaskCompleted {
 		c.MapTasks[args.TaskID].TaskState = Completed
+		c.updateAllMapTaskCompleted()
 		return nil
 	} else if args.TaskCompletedState == MapTaskFailed {
 		c.MapTasks[args.TaskID].TaskState = Failed
 		return nil
 	} else if args.TaskCompletedState == ReduceTaskCompleted {
 		c.ReduceTasks[args.TaskID].TaskState = Completed
+		c.updateAllReduceTaskCompleted()
 		return nil
 	} else if args.TaskCompletedState == ReduceTaskFailed {
 		c.ReduceTasks[args.TaskID].TaskState = Failed
 		return nil
 	}
 	return nil
+}
+func (c *Coordinator) updateAllMapTaskCompleted() {
+	for i := range c.MapTasks {
+		if c.MapTasks[i].TaskState != Completed {
+			c.AllMapTaskCompleted = false
+			return
+		}
+	}
+	c.AllMapTaskCompleted = true
+}
+func (c *Coordinator) updateAllReduceTaskCompleted() {
+	for i := range c.ReduceTasks {
+		if c.ReduceTasks[i].TaskState != Completed {
+			c.AllReduceTaskCompleted = false
+			return
+		}
+	}
+	c.AllReduceTaskCompleted = true
 }
 
 // start a thread that listens for RPCs from worker.go
