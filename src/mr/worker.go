@@ -151,7 +151,7 @@ func generateOutputFile(taskID int, intermediate []KeyValue, reducef func(string
 	oname := fmt.Sprintf("mr-out-%d", taskID)
 
 	ofile, _ := os.Create(oname)
-	fmt.Printf("Create file mr-out-%d", taskID)
+	fmt.Printf("Create file mr-out-%d\n", taskID)
 
 	i := 0
 	for i < len(intermediate) {
