@@ -60,6 +60,8 @@ func Worker(sockname string, mapf func(string, string) []KeyValue,
 			CallForReport(&report, &task)
 		case WAIT:
 			time.Sleep(1 * time.Second)
+		default:
+			time.Sleep(1 * time.Second)
 		}
 		// TODO: 退出循环呢
 	}
