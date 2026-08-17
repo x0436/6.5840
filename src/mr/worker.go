@@ -47,17 +47,20 @@ func Worker(sockname string, mapf func(string, string) []KeyValue,
 		task := MessageTask{}
 
 		CallForTask(&report, &task)
+		report.TaskID = task.TaskID
 
 		switch task.TaskType {
 		case MapTask:
 			HandleMapTask(&task, mapf)
+			report.TaskCompletedState = MapTaskCompleted
+			CallForReport(&report, &task)
 		case ReduceTask:
 			HandleReduceTask(&task, reducef)
+			report.TaskCompletedState = ReduceTaskCompleted
+			CallForReport(&report, &task)
 		case WAIT:
 			time.Sleep(1 * time.Second)
 		}
-
-		CallForReport(&report, &task)
 		// TODO: 退出循环呢
 	}
 }
