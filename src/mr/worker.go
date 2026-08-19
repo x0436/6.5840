@@ -71,7 +71,7 @@ func Worker(sockname string, mapf func(string, string) []KeyValue,
 func CallForTask(args *MessageReport, reply *MessageTask) {
 	ok := call("Coordinator.GetTask", args, reply)
 	if ok {
-		fmt.Printf("Get Task succeed!\n")
+		// fmt.Printf("Get Task succeed!\n")
 	} else {
 		fmt.Printf("call failed!\n")
 	}
@@ -80,7 +80,7 @@ func CallForTask(args *MessageReport, reply *MessageTask) {
 func CallForReport(args *MessageReport, reply *MessageTask) {
 	ok := call("Coordinator.ReportTask", args, reply)
 	if ok {
-		fmt.Printf("Report Task succeed!\n")
+		// fmt.Printf("Report Task succeed!\n")
 	} else {
 		fmt.Printf("call failed!\n")
 	}
@@ -152,7 +152,7 @@ func generateOutputFile(taskID int, intermediate []KeyValue, reducef func(string
 	oname := fmt.Sprintf("mr-out-%d", taskID)
 
 	ofile, _ := os.Create(oname)
-	fmt.Printf("Create file mr-out-%d\n", taskID)
+	// fmt.Printf("Create file mr-out-%d\n", taskID)
 
 	i := 0
 	for i < len(intermediate) {
