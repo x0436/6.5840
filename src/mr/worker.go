@@ -10,6 +10,7 @@ import (
 	"os"
 	"sort"
 	"time"
+	"strconv"
 )
 
 // Map functions return a slice of KeyValue.
@@ -109,7 +110,7 @@ func HandleMapTask(task *MessageTask, mapf func(string, string) []KeyValue) {
 
 	// 遍历每个中间文件 intermediate[i] 生成 mr-X-Y
 	for i := 0; i < NReduce; i++ {
-		oname := fmt.Sprintf("mr-%d-%d", task.TaskID, i)
+		oname := "mr-" + strconv.Itoa(task.TaskID) + "-" + strconv.Itoa(i)
 		ofile, _ := os.Create(oname)
 		enc := json.NewEncoder(ofile)
 
@@ -128,7 +129,8 @@ func HandleReduceTask(task *MessageTask, reducef func(string, []string) string) 
 
 	// 枚举每个中间文件, 获取kv对后合并到intermediate
 	for i := 0; i < NMap; i++ {
-		filename := fmt.Sprintf("mr-%d-%d", i, task.TaskID)
+		filename := "mr-" + strconv.Itoa(i) + "-" + strconv.Itoa(task.TaskID)
+
 		file, err := os.Open(filename)
 		if err != nil {
 			log.Fatalf("cannot open %v", filename)
