@@ -36,9 +36,9 @@ func (kv *KVServer) Get(args *rpc.GetArgs, reply *rpc.GetReply) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 
-	value, ok := kv.key2value[args.Key]
+	value, exists := kv.key2value[args.Key]
 
-	if ok {
+	if exists {
 		reply.Value = value
 		reply.Version = kv.key2version[args.Key]
 		reply.Err = rpc.OK
@@ -52,7 +52,39 @@ func (kv *KVServer) Get(args *rpc.GetArgs, reply *rpc.GetReply) {
 // If the key doesn't exist, Put installs the value if the
 // args.Version is 0, and returns ErrNoKey otherwise.
 func (kv *KVServer) Put(args *rpc.PutArgs, reply *rpc.PutReply) {
-	// Your code here.
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+
+	_, exists := kv.key2value[args.Key]
+	if exists {
+		kv.updateExistingKey(args, reply)
+	} else {
+		kv.createNewKey(args, reply)
+	}
+}
+func (kv *KVServer) updateExistingKey(args *rpc.PutArgs, reply *rpc.PutReply) {
+	version := kv.key2version[args.Key]
+
+	if version == args.Version {
+		// version一致, 更新value和version
+		kv.key2value[args.Key] = args.Value
+		kv.key2version[args.Key]++
+		reply.Err = rpc.OK
+	} else {
+		// version不一致
+		reply.Err = rpc.ErrVersion
+	}
+}
+func (kv *KVServer) createNewKey(args *rpc.PutArgs, reply *rpc.PutReply) {
+	if kv.key2version[args.Key] == 0 {
+		// version == 0, 创建tuple
+		kv.key2value[args.Key] = args.Value
+		kv.key2version[args.Key] = 1
+		reply.Err = rpc.OK
+	} else {
+		reply.Err = rpc.ErrNoKey
+	}
+
 }
 
 // You can ignore all arguments; they are for replicated KVservers
