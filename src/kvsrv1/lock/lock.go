@@ -64,7 +64,7 @@ func (lk *Lock) Release() {
 
 		if ownerID == lk.cliendID {
 			err = lk.ck.Put(lk.lockname, "", version)
-			if err == rpc.OK {
+			if err == rpc.OK || err == rpc.ErrMaybe {
 				return
 			}
 		}
