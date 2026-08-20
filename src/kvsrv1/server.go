@@ -25,7 +25,10 @@ type KVServer struct {
 }
 
 func MakeKVServer() *KVServer {
-	kv := &KVServer{}
+	kv := &KVServer{
+		key2value:   make(map[string]string),
+		key2version: make(map[string]rpc.Tversion),
+	}
 	// Your code here.
 	return kv
 }
@@ -76,15 +79,14 @@ func (kv *KVServer) updateExistingKey(args *rpc.PutArgs, reply *rpc.PutReply) {
 	}
 }
 func (kv *KVServer) createNewKey(args *rpc.PutArgs, reply *rpc.PutReply) {
-	if kv.key2version[args.Key] == 0 {
-		// version == 0, 创建tuple
-		kv.key2value[args.Key] = args.Value
-		kv.key2version[args.Key] = 1
-		reply.Err = rpc.OK
-	} else {
+	if args.Version != 0 {
 		reply.Err = rpc.ErrNoKey
+		return
 	}
 
+	kv.key2value[args.Key] = args.Value
+	kv.key2version[args.Key] = 1
+	reply.Err = rpc.OK
 }
 
 // You can ignore all arguments; they are for replicated KVservers
