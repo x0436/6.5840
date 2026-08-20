@@ -30,10 +30,10 @@ func MakeClerk(clnt *tester.Clnt, server string) kvtest.IKVClerk {
 // must match the declared types of the RPC handler function's
 // arguments. Additionally, reply must be passed as a pointer.
 func (ck *Clerk) Get(key string) (string, rpc.Tversion, rpc.Err) {
+	args := rpc.GetArgs{Key: key}
+	reply := rpc.GetReply{}
+	
 	for {
-		args := rpc.GetArgs{}
-		reply := rpc.GetReply{}
-
 		ok := ck.clnt.Call(ck.server, "KVServer.Get", &args, &reply)
 
 		if !ok {
