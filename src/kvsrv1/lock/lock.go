@@ -9,8 +9,9 @@ type Lock struct {
 	// the specific Clerk type of ck but promises that ck supports
 	// Put and Get.  The tester passes the clerk in when calling
 	// MakeLock().
-	ck kvtest.IKVClerk
-	// You may add code here
+	ck       kvtest.IKVClerk
+	lockname string
+	cliendID string
 }
 
 // The tester calls MakeLock() and passes in a k/v clerk; your code can
@@ -20,8 +21,7 @@ type Lock struct {
 // lockname argument; locks with different names should be
 // independent.
 func MakeLock(ck kvtest.IKVClerk, lockname string) *Lock {
-	lk := &Lock{ck: ck}
-	// You may add code here
+	lk := &Lock{ck: ck, lockname: lockname, cliendID: kvtest.RandValue(12)} // 有ID重复的风险啊
 	return lk
 }
 
