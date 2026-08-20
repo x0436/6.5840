@@ -36,6 +36,10 @@ func (lk *Lock) Acquire() {
 			version = 0
 		}
 
+		if ownerID == lk.cliendID {
+			return
+		}
+
 		if ownerID == "" {
 			err = lk.ck.Put(lk.lockname, lk.cliendID, version)
 			if err == rpc.OK {
