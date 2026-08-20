@@ -1,6 +1,9 @@
 package lock
 
 import (
+	"time"
+
+	"6.5840/kvsrv1/rpc"
 	"6.5840/kvtest1"
 )
 
@@ -26,9 +29,22 @@ func MakeLock(ck kvtest.IKVClerk, lockname string) *Lock {
 }
 
 func (lk *Lock) Acquire() {
-	// Your code here
+	for {
+		lockname := lk.lockname
+		value, version, err := lk.ck.Get(lockname)
+		if err == rpc.ErrNoKey {
+			version = 0
+		}
+
+		if value == "" {
+			lk.ck.Put(lockname, lk.cliendID, version) // 可能失败, 那是task3的事情
+		}
+		
+
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func (lk *Lock) Release() {
-	// Your code here
+	
 }
