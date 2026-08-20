@@ -32,11 +32,15 @@ func (lk *Lock) Acquire() {
 	for {
 		ownerID, version, err := lk.ck.Get(lk.lockname)
 		if err == rpc.ErrNoKey {
+			ownerID = ""
 			version = 0
 		}
 
 		if ownerID == "" {
-			lk.ck.Put(lk.lockname, lk.cliendID, version) // 可能失败, 那是task4的事情
+			err = lk.ck.Put(lk.lockname, lk.cliendID, version)
+			if err == rpc.OK {
+				return
+			}
 		}
 
 		time.Sleep(100 * time.Millisecond)
@@ -55,9 +59,12 @@ func (lk *Lock) Release() {
 		}
 
 		if ownerID == lk.cliendID {
-			lk.ck.Put(lk.lockname, "", version) // 可能失败, 那是task4的事情
+			err = lk.ck.Put(lk.lockname, "", version)
+			if err == rpc.OK {
+				return
+			}
 		}
-		
+
 		time.Sleep(100 * time.Millisecond)
 	}
 }
