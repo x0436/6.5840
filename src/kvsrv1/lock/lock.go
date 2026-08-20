@@ -30,12 +30,12 @@ func MakeLock(ck kvtest.IKVClerk, lockname string) *Lock {
 
 func (lk *Lock) Acquire() {
 	for {
-		lockname, version, err := lk.ck.Get(lk.lockname)
+		ownerID, version, err := lk.ck.Get(lk.lockname)
 		if err == rpc.ErrNoKey {
 			version = 0
 		}
 
-		if lockname == "" {
+		if ownerID == "" {
 			lk.ck.Put(lk.lockname, lk.cliendID, version) // 可能失败, 那是task3的事情
 		}
 
