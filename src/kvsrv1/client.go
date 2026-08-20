@@ -1,11 +1,12 @@
 package kvsrv
 
 import (
+	"fmt"
+
 	"6.5840/kvsrv1/rpc"
 	"6.5840/kvtest1"
 	"6.5840/tester1"
 )
-
 
 type Clerk struct {
 	clnt   *tester.Clnt
@@ -29,8 +30,26 @@ func MakeClerk(clnt *tester.Clnt, server string) kvtest.IKVClerk {
 // must match the declared types of the RPC handler function's
 // arguments. Additionally, reply must be passed as a pointer.
 func (ck *Clerk) Get(key string) (string, rpc.Tversion, rpc.Err) {
-	// You will have to modify this function.
-	return "", 0, rpc.ErrNoKey
+	for {
+		args := rpc.GetArgs{}
+		reply := rpc.GetReply{}
+
+		ok := ck.clnt.Call(ck.server, "KVServer.Get", &args, &reply)
+
+		if !ok {
+			DPrintf("RPC call: Get() failed")
+			continue
+		}
+
+		switch reply.Err {
+		case rpc.ErrNoKey:
+			return "", 0, rpc.ErrNoKey
+		case rpc.OK:
+			return reply.Value, reply.Version, rpc.OK
+		default:
+			continue
+		}
+	}
 }
 
 // Put updates key with value only if the version in the
