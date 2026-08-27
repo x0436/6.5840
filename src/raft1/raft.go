@@ -7,7 +7,6 @@ package raft
 // In addition,  Make() creates a new raft peer that implements the
 // raft interface.
 
-
 import (
 	//	"bytes"
 	"math/rand"
@@ -20,6 +19,17 @@ import (
 	"6.5840/tester1"
 )
 
+type LogEntry struct{
+	Command interface{}
+    Term    int
+}
+
+type NodeState int
+const (
+	Follower NodeState = iota
+	Candidate
+	Leader
+)
 
 // A Go object implementing a single Raft peer.
 type Raft struct {
@@ -31,7 +41,15 @@ type Raft struct {
 	// Your data here (3A, 3B, 3C).
 	// Look at the paper's Figure 2 for a description of what
 	// state a Raft server must maintain.
+	currentTerm int
+	votedFor int
+	log []LogEntry
 
+	commitIndex int
+	lastApplied int
+
+	nextIndex []int
+	matchIndex []int
 }
 
 // return currentTerm and whether this server
