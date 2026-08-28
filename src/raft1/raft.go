@@ -53,6 +53,8 @@ type Raft struct {
 	matchIndex []int
 
 	applyCh chan raftapi.ApplyMsg
+
+	lastHeartbeatTime time.Time
 }
 
 // return currentTerm and whether this server
