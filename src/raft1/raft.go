@@ -55,6 +55,8 @@ type Raft struct {
 	applyCh chan raftapi.ApplyMsg
 
 	lastHeartbeatTime time.Time
+
+	votes int
 }
 
 // return currentTerm and whether this server
