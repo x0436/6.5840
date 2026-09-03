@@ -186,6 +186,73 @@ type AppendEntriesReply struct {
 	Success bool
 }
 
+func (rf *Raft) sendHeartbeat(server int) {
+	args := rf.makeAppendEntriesArgs(server)
+	args.Entries = []LogEntry{}
+
+	rf.sendAppendEntries(server, args)
+}
+
+func (rf *Raft) sendLogEntries(server int) {
+	args := rf.makeAppendEntriesArgs(server)
+	rf.sendAppendEntries(server, args)
+}
+
+func (rf *Raft) makeAppendEntriesArgs(server int) *AppendEntriesArgs {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+
+	prevLogIndex := rf.nextIndex[server] - 1
+	prevLogTerm := 0
+	if prevLogIndex >= 0 {
+		prevLogTerm = rf.log[prevLogIndex].Term
+	}
+
+	entries := append([]LogEntry(nil), rf.log[rf.nextIndex[server]:]...)
+
+	return &AppendEntriesArgs{
+		Term:         rf.currentTerm,
+		LeaderId:     rf.me,
+		PrevLogIndex: prevLogIndex,
+		PrevLogTerm:  prevLogTerm,
+		Entries:      entries,
+		LeaderCommit: rf.commitIndex,
+	}
+}
+
+func (rf *Raft) sendAppendEntries(
+	server int,
+	args *AppendEntriesArgs,
+) {
+	reply := &AppendEntriesReply{}
+	ok := rf.peers[server].Call(
+		"Raft.AppendEntries",
+		args,
+		reply,
+	)
+	if !ok {
+		return
+	}
+
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+
+	if reply.Term > rf.currentTerm {
+		rf.currentTerm = reply.Term
+		rf.state = Follower
+		rf.votedFor = -1
+		rf.persist()
+		return
+	}
+
+	if reply.Success {
+		rf.nextIndex[server] = args.PrevLogIndex + len(args.Entries) + 1
+		rf.matchIndex[server] = rf.nextIndex[server] - 1
+	} else if rf.nextIndex[server] > 1 {
+		rf.nextIndex[server]--
+	}
+}
+
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
@@ -202,7 +269,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		rf.votedFor = -1
 		rf.persist()
 	}
-	
+
 	rf.state = Follower
 	rf.lastHeartbeatTime = time.Now()
 	reply.Term = rf.currentTerm
@@ -213,6 +280,13 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	reply.Success = true
 }
 
+func (rf *Raft) sendHeartbeats() {
+	for peer := range rf.peers {
+		if peer != rf.me {
+			go rf.sendHeartbeat(peer)
+		}
+	}
+}
 
 // the service using Raft (e.g. a k/v server) wants to start
 // agreement on the next command to be appended to Raft's log. if this
