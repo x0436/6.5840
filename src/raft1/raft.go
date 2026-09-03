@@ -220,16 +220,10 @@ func (rf *Raft) makeAppendEntriesArgs(server int) *AppendEntriesArgs {
 	}
 }
 
-func (rf *Raft) sendAppendEntries(
-	server int,
-	args *AppendEntriesArgs,
-) {
+func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs) {
 	reply := &AppendEntriesReply{}
-	ok := rf.peers[server].Call(
-		"Raft.AppendEntries",
-		args,
-		reply,
-	)
+	ok := rf.peers[server].Call("Raft.AppendEntries", args, reply)
+
 	if !ok {
 		return
 	}
