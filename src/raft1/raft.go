@@ -56,7 +56,7 @@ type Raft struct {
 
 	lastHeartbeatTime time.Time
 
-	votes int
+	state NodeState
 }
 
 // return currentTerm and whether this server
@@ -187,12 +187,32 @@ type AppendEntriesReply struct {
 }
 
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
 
+	reply.Term = rf.currentTerm
+	reply.Success = false
+
+	if args.Term < rf.currentTerm {
+		return
+	}
+
+	if args.Term > rf.currentTerm {
+		rf.currentTerm = args.Term
+		rf.votedFor = -1
+		rf.persist()
+	}
+	
+	rf.state = Follower
+	rf.lastHeartbeatTime = time.Now()
+	reply.Term = rf.currentTerm
+	// 检查 PrevLogIndex / PrevLogTerm
+	// 冲突时删除并追加 args.Entries
+	// 根据 LeaderCommit 更新 commitIndex
+
+	reply.Success = true
 }
 
-func (rf *Raft) sendHeartBeat() {
-
-}
 
 // the service using Raft (e.g. a k/v server) wants to start
 // agreement on the next command to be appended to Raft's log. if this
