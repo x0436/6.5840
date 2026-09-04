@@ -133,6 +133,17 @@ type RequestVoteArgs struct {
 	LastLogTerm  int
 }
 
+
+func (rf *Raft) lastLogInfo() (int, int) {
+	lastIndex := len(rf.log) - 1
+	lastTerm := 0
+	if lastIndex >= 0 {
+		lastTerm = rf.log[lastIndex].Term
+	}
+	return lastIndex, lastTerm
+}
+
+
 // example RequestVote RPC reply structure.
 // field names must start with capital letters!
 type RequestVoteReply struct {
@@ -144,6 +155,42 @@ type RequestVoteReply struct {
 // example RequestVote RPC handler.
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (3A, 3B).
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+
+	reply.Term = rf.currentTerm
+	reply.VoteGranted = false
+
+	if args.Term < rf.currentTerm {
+		return
+	}
+
+	if args.Term > rf.currentTerm {
+		rf.currentTerm = args.Term
+		rf.state = Follower
+		rf.votedFor = -1
+		rf.persist()
+	}
+
+	reply.Term = rf.currentTerm
+
+	lastIndex, lastTerm := rf.lastLogInfo()
+	candidateUpToDate :=
+		args.LastLogTerm > lastTerm ||
+			(args.LastLogTerm == lastTerm && args.LastLogIndex >= lastIndex)
+
+	canVote :=
+		rf.votedFor == -1 ||
+			rf.votedFor == args.CandidateId
+
+	if canVote && candidateUpToDate {
+		rf.votedFor = args.CandidateId
+		rf.state = Follower
+		rf.lastHeartbeatTime = time.Now()
+		rf.persist()
+
+		reply.VoteGranted = true
+	}
 }
 
 // example code to send a RequestVote RPC to a server.
