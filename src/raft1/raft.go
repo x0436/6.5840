@@ -133,7 +133,6 @@ type RequestVoteArgs struct {
 	LastLogTerm  int
 }
 
-
 func (rf *Raft) lastLogInfo() (int, int) {
 	lastIndex := len(rf.log) - 1
 	lastTerm := 0
@@ -142,7 +141,6 @@ func (rf *Raft) lastLogInfo() (int, int) {
 	}
 	return lastIndex, lastTerm
 }
-
 
 // example RequestVote RPC reply structure.
 // field names must start with capital letters!
@@ -175,13 +173,10 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	reply.Term = rf.currentTerm
 
 	lastIndex, lastTerm := rf.lastLogInfo()
-	candidateUpToDate :=
-		args.LastLogTerm > lastTerm ||
-			(args.LastLogTerm == lastTerm && args.LastLogIndex >= lastIndex)
+	candidateUpToDate := args.LastLogTerm > lastTerm ||
+		(args.LastLogTerm == lastTerm && args.LastLogIndex >= lastIndex)
 
-	canVote :=
-		rf.votedFor == -1 ||
-			rf.votedFor == args.CandidateId
+	canVote := rf.votedFor == -1 || rf.votedFor == args.CandidateId
 
 	if canVote && candidateUpToDate {
 		rf.votedFor = args.CandidateId
