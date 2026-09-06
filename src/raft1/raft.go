@@ -490,7 +490,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	// Your initialization code here (3A, 3B, 3C).
 	rf.currentTerm = 0
 	rf.votedFor = -1
-	rf.log = make([]LogEntry, 0)
+	rf.log = []LogEntry{{Term: 0}}
 	rf.commitIndex = -1
 	rf.lastApplied = -1
 	rf.state = Follower
