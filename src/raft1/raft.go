@@ -396,15 +396,48 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	if args.Term > rf.currentTerm {
 		rf.currentTerm = args.Term
 		rf.votedFor = -1
-		rf.persist()
 	}
 
 	rf.state = Follower
 	rf.lastHeartbeatTime = time.Now()
 	reply.Term = rf.currentTerm
-	// 检查 PrevLogIndex / PrevLogTerm
-	// 冲突时删除并追加 args.Entries
-	// 根据 LeaderCommit 更新 commitIndex
+
+	if args.PrevLogIndex < 0 ||
+		args.PrevLogIndex >= len(rf.log) ||
+		rf.log[args.PrevLogIndex].Term != args.PrevLogTerm {
+		return
+	}
+
+	changed := false
+
+	for i, entry := range args.Entries {
+		index := args.PrevLogIndex + 1 + i
+
+		if index < len(rf.log) {
+			if rf.log[index].Term != entry.Term {
+				rf.log = rf.log[:index]
+				rf.log = append(rf.log, args.Entries[i:]...)
+				changed = true
+				break
+			}
+		} else {
+			rf.log = append(rf.log, args.Entries[i:]...)
+			changed = true
+			break
+		}
+	}
+
+	if changed {
+		rf.persist()
+	}
+
+	if args.LeaderCommit > rf.commitIndex {
+		rf.commitIndex = args.LeaderCommit
+		if rf.commitIndex >= len(rf.log) {
+			rf.commitIndex = len(rf.log) - 1
+		}
+		go rf.applyCommitted()
+	}
 
 	reply.Success = true
 }
