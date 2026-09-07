@@ -442,6 +442,49 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	reply.Success = true
 }
 
+func (rf *Raft) advanceCommitLocked() bool {
+	for index := len(rf.log) - 1; index > rf.commitIndex; index-- {
+		if rf.log[index].Term != rf.currentTerm {
+			continue
+		}
+
+		count := 1
+		for peer := range rf.peers {
+			if peer != rf.me && rf.matchIndex[peer] >= index {
+				count++
+			}
+		}
+
+		if count > len(rf.peers)/2 {
+			rf.commitIndex = index
+			return true
+		}
+	}
+
+	return false
+}
+
+func (rf *Raft) applyCommitted() {
+	for {
+		rf.mu.Lock()
+
+		if rf.lastApplied >= rf.commitIndex {
+			rf.mu.Unlock()
+			return
+		}
+
+		rf.lastApplied++
+		msg := raftapi.ApplyMsg{
+			CommandValid: true,
+			Command:      rf.log[rf.lastApplied].Command,
+			CommandIndex: rf.lastApplied,
+		}
+
+		rf.mu.Unlock()
+		rf.applyCh <- msg
+	}
+}
+
 func (rf *Raft) sendHeartbeats() {
 	for peer := range rf.peers {
 		if peer != rf.me {
