@@ -429,13 +429,31 @@ func (rf *Raft) sendHeartbeats() {
 // term. the third return value is true if this server believes it is
 // the leader.
 func (rf *Raft) Start(command interface{}) (int, int, bool) {
-	index := -1
-	term := -1
-	isLeader := true
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
 
-	// Your code here (3B).
+	if rf.state != Leader { // 非leader
+		return -1, rf.currentTerm, false
+	}
 
-	return index, term, isLeader
+	index := len(rf.log)
+	term := rf.currentTerm
+
+	rf.log = append(rf.log, LogEntry{ // 将新的命令加入到 log里
+		Command: command,
+		Term:    term,
+	})
+	rf.matchIndex[rf.me] = index
+	rf.nextIndex[rf.me] = len(rf.log)
+	rf.persist() // 为什么在这里持久化
+
+	for peer := range rf.peers { // 遍历peers, 将日志条目发送给followers
+		if peer != rf.me {
+			go rf.sendLogEntries(peer)
+		}
+	}
+
+	return index, term, true
 }
 
 func (rf *Raft) ticker() {
