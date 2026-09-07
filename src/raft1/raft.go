@@ -432,22 +432,22 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 
-	if rf.state != Leader { // 非leader
+	if rf.state != Leader {
 		return -1, rf.currentTerm, false
 	}
 
 	index := len(rf.log)
 	term := rf.currentTerm
 
-	rf.log = append(rf.log, LogEntry{ // 将新的命令加入到 log里
+	rf.log = append(rf.log, LogEntry{
 		Command: command,
 		Term:    term,
 	})
 	rf.matchIndex[rf.me] = index
 	rf.nextIndex[rf.me] = len(rf.log)
-	rf.persist() // 为什么在这里持久化
+	rf.persist()
 
-	for peer := range rf.peers { // 遍历peers, 将日志条目发送给followers
+	for peer := range rf.peers {
 		if peer != rf.me {
 			go rf.sendLogEntries(peer)
 		}
