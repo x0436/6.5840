@@ -324,10 +324,7 @@ type AppendEntriesReply struct {
 }
 
 func (rf *Raft) sendHeartbeat(server int) {
-	args := rf.makeAppendEntriesArgs(server)
-	args.Entries = []LogEntry{}
-
-	rf.sendAppendEntries(server, args)
+	rf.sendLogEntries(server)
 }
 
 func (rf *Raft) sendLogEntries(server int) {
