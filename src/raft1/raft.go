@@ -159,11 +159,13 @@ func (rf *Raft) startElection() {
 	rf.mu.Unlock()
 
 	votes := 1
+	rf.mu.Lock()
 	if votes > len(rf.peers)/2 {
 		rf.becomeLeaderLocked()
 		go rf.sendHeartbeats()
 		return
 	}
+	rf.mu.Unlock()
 
 	for peer := range rf.peers {
 		if peer == rf.me {
@@ -214,7 +216,7 @@ func (rf *Raft) becomeLeaderLocked() {
 
 	for i := range rf.peers {
 		rf.nextIndex[i] = next
-		rf.matchIndex[i] = -1
+		rf.matchIndex[i] = next - 1
 	}
 
 	rf.lastHeartbeatTime = time.Now()
