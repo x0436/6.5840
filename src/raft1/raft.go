@@ -374,9 +374,22 @@ func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs) {
 		return
 	}
 
+	if rf.state != Leader || args.Term != rf.currentTerm {
+		return
+	}
+
 	if reply.Success {
-		rf.nextIndex[server] = args.PrevLogIndex + len(args.Entries) + 1
-		rf.matchIndex[server] = rf.nextIndex[server] - 1
+		next := args.PrevLogIndex + len(args.Entries) + 1
+		if next > rf.nextIndex[server] {
+			rf.nextIndex[server] = next
+		}
+		if rf.nextIndex[server]-1 > rf.matchIndex[server] {
+			rf.matchIndex[server] = rf.nextIndex[server] - 1
+		}
+
+		if rf.advanceCommitLocked() {
+			go rf.applyCommitted()
+		}
 	} else if rf.nextIndex[server] > 1 {
 		rf.nextIndex[server]--
 	}
