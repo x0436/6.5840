@@ -190,7 +190,7 @@ func (rf *Raft) startElection() {
 				return
 			}
 
-			// RPC 返回时，本次选举可能已经过期。
+			// RPC 返回时，本次选举可能已经过期
 			if rf.state != Candidate || rf.currentTerm != term {
 				return
 			}
@@ -408,6 +408,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	if args.Term > rf.currentTerm {
 		rf.currentTerm = args.Term
 		rf.votedFor = -1
+		rf.persist()
 	}
 
 	rf.state = Follower
