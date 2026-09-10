@@ -1022,8 +1022,9 @@ func TestFigure8Unreliable3C(t *testing.T) {
 		}
 	}
 	tester.AnnotateConnection(ts.g.GetConnected())
-
+	fmt.Println("111111111111111111111111111111111111111")
 	ts.one(rand.Int()%10000, servers, true)
+	fmt.Println("222222222222222222222222222222222222222")
 }
 
 func internalChurn(t *testing.T, reliable bool) {
