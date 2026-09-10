@@ -528,7 +528,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	defer rf.mu.Unlock()
 
 	if rf.state != Leader {
-		return -1, rf.currentTerm, false
+		return 0, rf.currentTerm, false
 	}
 
 	index := len(rf.log)
@@ -538,8 +538,6 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 		Command: command,
 		Term:    term,
 	})
-	rf.matchIndex[rf.me] = index
-	rf.nextIndex[rf.me] = len(rf.log)
 	rf.persist()
 
 	for peer := range rf.peers {
