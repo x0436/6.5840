@@ -395,7 +395,8 @@ func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs) {
 		if rf.advanceCommitLocked() {
 			go rf.applyCommitted()
 		}
-	} else if rf.nextIndex[server] > 1 {
+	} else if args.PrevLogIndex == rf.nextIndex[server]-1 &&
+		rf.nextIndex[server] > 1 {
 		rf.nextIndex[server]--
 	}
 }
@@ -539,12 +540,6 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 		Term:    term,
 	})
 	rf.persist()
-
-	for peer := range rf.peers {
-		if peer != rf.me {
-			go rf.sendLogEntries(peer)
-		}
-	}
 
 	return index, term, true
 }
