@@ -57,6 +57,8 @@ type Raft struct {
 	lastHeartbeatTime time.Time
 
 	state NodeState
+
+	applyCond *sync.Cond
 }
 
 // return currentTerm and whether this server
@@ -393,7 +395,7 @@ func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs) {
 		}
 
 		if rf.advanceCommitLocked() {
-			go rf.applyCommitted()
+			rf.applyCond.Signal()
 		}
 	} else if args.PrevLogIndex == rf.nextIndex[server]-1 &&
 		rf.nextIndex[server] > 1 {
@@ -456,7 +458,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		if rf.commitIndex >= len(rf.log) {
 			rf.commitIndex = len(rf.log) - 1
 		}
-		go rf.applyCommitted()
+		rf.applyCond.Signal()
 	}
 
 	reply.Success = true
@@ -483,14 +485,12 @@ func (rf *Raft) advanceCommitLocked() bool {
 
 	return false
 }
-
-func (rf *Raft) applyCommitted() {
+func (rf *Raft) applier() {
 	for {
 		rf.mu.Lock()
 
-		if rf.lastApplied >= rf.commitIndex {
-			rf.mu.Unlock()
-			return
+		for rf.lastApplied >= rf.commitIndex {
+			rf.applyCond.Wait()
 		}
 
 		rf.lastApplied++
@@ -601,11 +601,13 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.lastApplied = 0
 	rf.state = Follower
 	rf.lastHeartbeatTime = time.Now()
+	rf.applyCond = sync.NewCond(&rf.mu)
 
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
 
 	// start ticker goroutine to start elections
+	go rf.applier()
 	go rf.ticker()
 
 	return rf
