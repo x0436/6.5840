@@ -58,7 +58,8 @@ type Raft struct {
 
 	state NodeState
 
-	applyCond *sync.Cond
+	applyCond     *sync.Cond
+	replicationMu []sync.Mutex
 }
 
 // return currentTerm and whether this server
@@ -224,8 +225,9 @@ func (rf *Raft) becomeLeaderLocked() {
 
 	for i := range rf.peers {
 		rf.nextIndex[i] = next
-		rf.matchIndex[i] = next - 1
+		rf.matchIndex[i] = 0
 	}
+	rf.matchIndex[rf.me] = next - 1
 
 	rf.lastHeartbeatTime = time.Now()
 }
@@ -336,8 +338,22 @@ func (rf *Raft) sendHeartbeat(server int) {
 }
 
 func (rf *Raft) sendLogEntries(server int) {
-	args := rf.makeAppendEntriesArgs(server)
-	rf.sendAppendEntries(server, args)
+	rf.replicationMu[server].Lock()
+	defer rf.replicationMu[server].Unlock()
+
+	for {
+		rf.mu.Lock()
+		if rf.state != Leader {
+			rf.mu.Unlock()
+			return
+		}
+		rf.mu.Unlock()
+
+		args := rf.makeAppendEntriesArgs(server)
+		if !rf.sendAppendEntries(server, args) {
+			return
+		}
+	}
 }
 
 func (rf *Raft) makeAppendEntriesArgs(server int) *AppendEntriesArgs {
@@ -362,12 +378,12 @@ func (rf *Raft) makeAppendEntriesArgs(server int) *AppendEntriesArgs {
 	}
 }
 
-func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs) {
+func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs) bool {
 	reply := &AppendEntriesReply{}
 	ok := rf.peers[server].Call("Raft.AppendEntries", args, reply)
 
 	if !ok {
-		return
+		return false
 	}
 
 	rf.mu.Lock()
@@ -378,29 +394,39 @@ func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs) {
 		rf.state = Follower
 		rf.votedFor = -1
 		rf.persist()
-		return
+		return false
 	}
 
 	if rf.state != Leader || args.Term != rf.currentTerm {
-		return
+		return false
 	}
 
 	if reply.Success {
-		next := args.PrevLogIndex + len(args.Entries) + 1
-		if next > rf.nextIndex[server] {
-			rf.nextIndex[server] = next
-		}
-		if rf.nextIndex[server]-1 > rf.matchIndex[server] {
-			rf.matchIndex[server] = rf.nextIndex[server] - 1
+		replicatedThrough := args.PrevLogIndex + len(args.Entries)
+		sentNextIndex := args.PrevLogIndex + 1
+
+		if replicatedThrough >= rf.matchIndex[server] &&
+			sentNextIndex <= rf.nextIndex[server] {
+			if replicatedThrough > rf.matchIndex[server] {
+				rf.matchIndex[server] = replicatedThrough
+			}
+			if rf.nextIndex[server] < replicatedThrough+1 {
+				rf.nextIndex[server] = replicatedThrough + 1
+			}
 		}
 
 		if rf.advanceCommitLocked() {
 			rf.applyCond.Signal()
 		}
-	} else if args.PrevLogIndex == rf.nextIndex[server]-1 &&
-		rf.nextIndex[server] > 1 {
-		rf.nextIndex[server]--
+		return false
 	}
+
+	if rf.nextIndex[server] > 1 {
+		rf.nextIndex[server]--
+		return true
+	}
+
+	return false
 }
 
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
@@ -452,6 +478,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	if changed {
 		rf.persist()
 	}
+
 
 	if args.LeaderCommit > rf.commitIndex {
 		rf.commitIndex = args.LeaderCommit
@@ -602,6 +629,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.state = Follower
 	rf.lastHeartbeatTime = time.Now()
 	rf.applyCond = sync.NewCond(&rf.mu)
+	rf.replicationMu = make([]sync.Mutex, len(peers))
 
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
